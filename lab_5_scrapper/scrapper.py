@@ -160,6 +160,7 @@ class HTMLParser:
             article_id (int): Article id
             config (Config): Configuration
         """
+        self.full_url = full_url
 
     def _fill_article_with_text(self, article_soup: BeautifulSoup) -> None:
         """
