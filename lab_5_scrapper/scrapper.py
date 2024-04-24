@@ -4,9 +4,9 @@ Crawler implementation.
 # pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable
 import datetime
 import json
-import os
 import pathlib
 import re
+import shutil
 
 from bs4 import BeautifulSoup
 import requests
@@ -103,11 +103,11 @@ class Config:
 
         num = conf['total_articles_to_find_and_parse']
 
-        if not 1 <= num <= 150:
-            raise NumberOfArticlesOutOfRangeError
-
-        if not isinstance(num, int):
+        if not isinstance(num, int) or (num <= 0):
             raise IncorrectNumberOfArticlesError
+
+        if num < 1 or num > 150:
+            raise NumberOfArticlesOutOfRangeError
 
         if not isinstance(conf['headers'], dict):
             raise IncorrectHeadersError
@@ -118,7 +118,8 @@ class Config:
         if not (isinstance(conf['timeout'], int) and (0 < conf['timeout'] < 60)):
             raise IncorrectTimeoutError
 
-        if not isinstance(conf['should_verify_certificate'], bool):
+        if not isinstance(conf['should_verify_certificate'], bool) \
+                or not isinstance(conf['headless_mode'], bool):
             raise IncorrectVerifyError
 
     def get_seed_urls(self) -> list[str]:
@@ -345,13 +346,9 @@ def prepare_environment(base_path: Union[pathlib.Path, str]) -> None:
     Args:
         base_path (Union[pathlib.Path, str]): Path where articles stores
     """
-    if not os.path.exists(base_path):
-        os.makedirs(base_path)
-    else:
-        files = os.listdir(base_path)
-        for file in files:
-            if os.path.exists(file):
-                os.remove(file)
+    if base_path.exists():
+        shutil.rmtree(base_path)
+    base_path.mkdir(parents=True)
 
 
 def main() -> None:
