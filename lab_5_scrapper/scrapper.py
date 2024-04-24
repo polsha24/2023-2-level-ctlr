@@ -230,9 +230,11 @@ class Crawler:
             str: Url from HTML
         """
         url = ""
-        links = article_bs.findAll('a', class_="article-item_title")
+        links = article_bs.find_all('a', class_="article-item_title")
         for link in links:
+            print(link)
             url = link.get('href')
+            print(url)
             if url not in self.urls:
                 break
         url = self.url_pattern + url[len("/articles")::]
@@ -244,13 +246,13 @@ class Crawler:
         """
         seed_urls = self.get_search_urls()
 
-        for seed_url in seed_urls:
+        for seed_url in seed_urls[:1]:
             response = make_request(seed_url, self.config)
             if not response.ok:
                 continue
 
             article_bs = BeautifulSoup(response.text, "html.parser")
-            urls = [self._extract_url(article_bs) for i in range(10)]
+            urls = [self._extract_url(article_bs) for _ in range(10)]
             self.urls.extend(urls)
 
     def get_search_urls(self) -> list:
@@ -296,7 +298,7 @@ class HTMLParser:
         headline = article_soup.find("h1", class_="article_title")
         raw_text = f'{headline.string}'
 
-        text_blocks = article_soup.findAll('p')
+        text_blocks = article_soup.find_all('p')
         for text_block in text_blocks:
             if not text_block.string:
                 continue
