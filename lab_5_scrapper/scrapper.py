@@ -245,16 +245,15 @@ class Crawler:
         """
         seed_urls = self.get_search_urls()
 
-        for seed_url in seed_urls:
-            response = make_request(seed_url, self.config)
-            if not response.ok:
-                continue
+        while len(self.urls) < self.config.get_num_articles():
+            for seed_url in seed_urls:
+                response = make_request(seed_url, self.config)
+                if not response.ok:
+                    continue
 
-            article_bs = BeautifulSoup(response.text, "html.parser")
-            extracted = self._extract_url(article_bs)
-            for i in range(10):
-                self.urls.append(extracted)
+                article_bs = BeautifulSoup(response.text, "html.parser")
                 extracted = self._extract_url(article_bs)
+                self.urls.append(extracted)
 
     def get_search_urls(self) -> list:
         """
@@ -369,7 +368,7 @@ def main() -> None:
         parser = HTMLParser(full_url=url, article_id=index + 1, config=configuration)
         article = parser.parse()
         to_raw(article)
-    print("It's done!")
+    print("done!")
 
 
 if __name__ == "__main__":
