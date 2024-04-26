@@ -232,12 +232,11 @@ class Crawler:
         url = ""
         links = article_bs.find_all('a', class_="article-item_title")
         for link in links:
-            print(link)
             url = link.get('href')
-            print(url)
+            url = self.url_pattern + url[len("/articles")::]
             if url not in self.urls:
                 break
-        url = self.url_pattern + url[len("/articles")::]
+
         return url
 
     def find_articles(self) -> None:
@@ -246,14 +245,16 @@ class Crawler:
         """
         seed_urls = self.get_search_urls()
 
-        for seed_url in seed_urls[:1]:
+        for seed_url in seed_urls:
             response = make_request(seed_url, self.config)
             if not response.ok:
                 continue
 
             article_bs = BeautifulSoup(response.text, "html.parser")
-            urls = [self._extract_url(article_bs) for _ in range(10)]
-            self.urls.extend(urls)
+            extracted = self._extract_url(article_bs)
+            for i in range(10):
+                self.urls.append(extracted)
+                extracted = self._extract_url(article_bs)
 
     def get_search_urls(self) -> list:
         """
@@ -300,9 +301,8 @@ class HTMLParser:
 
         text_blocks = article_soup.find_all('p')
         for text_block in text_blocks:
-            if not text_block.string:
-                continue
-            raw_text += f'\n{text_block.string}'
+            if text_block.string:
+                raw_text += f'\n{text_block.string}'
 
         self.article.text = raw_text
 
