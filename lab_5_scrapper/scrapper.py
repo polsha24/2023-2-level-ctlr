@@ -14,7 +14,7 @@ import requests
 from typing import Pattern, Union
 
 from core_utils import constants
-from core_utils.article.io import to_raw
+from core_utils.article.io import to_raw, to_meta
 from core_utils.article.article import Article
 from core_utils.config_dto import ConfigDTO
 
@@ -295,9 +295,7 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
-        headline = article_soup.find("h1", class_="article_title")
-        raw_text = f'{headline.string}'
-
+        raw_text = ''
         text_blocks = article_soup.find_all('p')
         for text_block in text_blocks:
             if text_block.string:
@@ -312,6 +310,17 @@ class HTMLParser:
         Args:
             article_soup (bs4.BeautifulSoup): BeautifulSoup instance
         """
+        headline = article_soup.find("h1", class_="article_title")
+        self.article.title = headline.text
+        # date = article_soup.find("p", class_="article_date")
+        # self.article.date = self.unify_date_format(date.text)
+        author = article_soup.find("a", class_="article-autors_link")
+        if not author:
+            self.article.author = ["NOT FOUND"]
+        else:
+            self.article.author = [author.text]
+        themes = article_soup.find_all("a", class_="article_themes-link")
+        self.article.topics = [theme.string for theme in themes]
 
     def unify_date_format(self, date_str: str) -> datetime.datetime:
         """
@@ -368,6 +377,7 @@ def main() -> None:
         parser = HTMLParser(full_url=url, article_id=index + 1, config=configuration)
         article = parser.parse()
         to_raw(article)
+        to_meta(article)
     print("done!")
 
 
