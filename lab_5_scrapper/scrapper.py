@@ -7,15 +7,14 @@ import json
 import pathlib
 import re
 import shutil
+from typing import Union, Pattern
 
-from bs4 import BeautifulSoup
 import requests
-
-from typing import Pattern, Union
+from bs4 import BeautifulSoup
 
 from core_utils import constants
-from core_utils.article.io import to_raw, to_meta
 from core_utils.article.article import Article
+from core_utils.article.io import to_raw, to_meta
 from core_utils.config_dto import ConfigDTO
 
 
@@ -332,6 +331,11 @@ class HTMLParser:
         Returns:
             datetime.datetime: Datetime object
         """
+        # 31 октября 2023
+        converter = {"января": 1, "февраля": 2, "марта": 3, "апреля": 4, "мая": 5,
+                     "июня": 6, "июля": 7, "августа": 8, "сентября": 9,
+                     "октября": 10, "ноября": 11, "декабря": 12}
+        return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
 
     def parse(self) -> Union[Article, bool, list]:
         """
@@ -383,4 +387,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
