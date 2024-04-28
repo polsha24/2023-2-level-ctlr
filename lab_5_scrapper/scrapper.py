@@ -1,20 +1,20 @@
 """
 Crawler implementation.
 """
-# pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable
 import datetime
 import json
+# pylint: disable=too-many-arguments, too-many-instance-attributes, unused-import, undefined-variable
 import pathlib
 import re
 import shutil
-from typing import Union, Pattern
+from typing import Pattern, Union
 
 import requests
 from bs4 import BeautifulSoup
 
 from core_utils import constants
 from core_utils.article.article import Article
-from core_utils.article.io import to_raw, to_meta
+from core_utils.article.io import to_meta, to_raw
 from core_utils.config_dto import ConfigDTO
 
 
@@ -311,8 +311,8 @@ class HTMLParser:
         """
         headline = article_soup.find("h1", class_="article_title")
         self.article.title = headline.text
-        # date = article_soup.find("p", class_="article_date")
-        # self.article.date = self.unify_date_format(date.text)
+        date = article_soup.find("p", class_="article_date")
+        self.article.date = self.unify_date_format(date.text)
         author = article_soup.find("a", class_="article-autors_link")
         if not author:
             self.article.author = ["NOT FOUND"]
@@ -331,11 +331,13 @@ class HTMLParser:
         Returns:
             datetime.datetime: Datetime object
         """
-        # 31 октября 2023
-        converter = {"января": 1, "февраля": 2, "марта": 3, "апреля": 4, "мая": 5,
-                     "июня": 6, "июля": 7, "августа": 8, "сентября": 9,
-                     "октября": 10, "ноября": 11, "декабря": 12}
-        return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+        converter = {'января': '01', 'февраля': '02', 'марта': '03', 'апреля': '04', 'мая': '05',
+                     'июня': '06', 'июля': '07', 'августа': '08', 'сентября': '09',
+                     'октября': '10', 'ноября': '11', 'декабря': '12'}
+        date = date_str.split()
+        month = converter[date[1]]
+        date[1] = month
+        return datetime.datetime.strptime(" ".join(date), '%d %m %Y')
 
     def parse(self) -> Union[Article, bool, list]:
         """
