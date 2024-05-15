@@ -4,8 +4,10 @@ Pipeline for CONLL-U formatting.
 # pylint: disable=too-few-public-methods, unused-import, undefined-variable, too-many-nested-blocks
 import pathlib
 
+import spacy_udpipe
+
 from core_utils.article.io import from_raw, to_cleaned
-from core_utils.constants import ASSETS_PATH
+from core_utils.constants import ASSETS_PATH, UDPIPE_MODEL_PATH
 
 try:
     from networkx import DiGraph
@@ -13,7 +15,7 @@ except ImportError:  # pragma: no cover
     DiGraph = None  # type: ignore
     print('No libraries installed. Failed to import.')
 
-from core_utils.article.article import Article, get_article_id_from_filepath, split_by_sentence
+from core_utils.article.article import Article, get_article_id_from_filepath, split_by_sentence, ArtifactType
 from core_utils.pipeline import (AbstractCoNLLUAnalyzer, CoNLLUDocument, LibraryWrapper,
                                  PipelineProtocol, StanzaDocument, TreeNode)
 
@@ -67,6 +69,8 @@ class CorpusManager:
 
         raw_f = list(self.path_to_raw_txt_data.glob("*_raw.txt"))
         meta_f = list(self.path_to_raw_txt_data.glob("*_meta.json"))
+        if len(meta_f) != len(raw_f):
+            raise InconsistentDatasetError
         sorted_raw_files = sorted(raw_f, key=lambda file: get_article_id_from_filepath(file))
         sorted_meta_files = sorted(meta_f, key=lambda file: get_article_id_from_filepath(file))
 
@@ -120,7 +124,7 @@ class TextProcessingPipeline(PipelineProtocol):
         for article in self._corpus.get_articles().values():
             to_cleaned(article)
             if self.analyzer:
-                self.analyzer.analyze(article.text)
+                article.set_conllu_info(self.analyzer.analyze(split_by_sentence(article.text)))
                 self.analyzer.to_conllu(article)
 
 
@@ -135,6 +139,7 @@ class UDPipeAnalyzer(LibraryWrapper):
         """
         Initialize an instance of the UDPipeAnalyzer class.
         """
+        self._analyzer = self._bootstrap()
 
     def _bootstrap(self) -> AbstractCoNLLUAnalyzer:
         """
@@ -143,15 +148,16 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             AbstractCoNLLUAnalyzer: Analyzer instance
         """
-        # model = spacy_udpipe.load_from_path(
-        #     lang="ru",
-        #     path=str(model_path)
-        # )
-        # model.add_pipe(
-        #     "conll_formatter",
-        #     last=True,
-        #     config={"conversion_maps": {"XPOS": {"": "_"}}, "include_headers": True},
-        # )
+        model = spacy_udpipe.load_from_path(
+            lang="ru",
+            path=str(UDPIPE_MODEL_PATH)
+        )
+        model.add_pipe(
+            "conll_formatter",
+            last=True,
+            config={"conversion_maps": {"XPOS": {"": "_"}}, "include_headers": True},
+        )
+        return model
 
     def analyze(self, texts: list[str]) -> list[StanzaDocument | str]:
         """
@@ -163,9 +169,13 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             list[StanzaDocument | str]: List of documents
         """
-        # analyzed_text = model(text)
-        # conllu_annotation = analyzed_text._.conll_str
-        # return str(conllu_annotation)
+        documents = []
+
+        for text in texts:
+            conllu_annotation = self._analyzer(text)._.conll_str
+            documents.append(conllu_annotation)
+
+        return documents
 
     def to_conllu(self, article: Article) -> None:
         """
@@ -174,10 +184,10 @@ class UDPipeAnalyzer(LibraryWrapper):
         Args:
             article (Article): Article containing information to save
         """
-        path = article.get_file_path()
-        # with open(path, 'w', encoding='utf-8') as annotation_file:
-        #     annotation_file.write(annotation)
-        #     annotation_file.write("\n")
+        path = article.get_file_path(ArtifactType.UDPIPE_CONLLU)
+        with open(path, 'w', encoding='utf-8') as annotation_file:
+            annotation_file.writelines(article.get_conllu_info())
+            annotation_file.write("\n")
 
 
 class StanzaAnalyzer(LibraryWrapper):
@@ -337,6 +347,7 @@ def main() -> None:
     """
     corpus_manager = CorpusManager(path_to_raw_txt_data=ASSETS_PATH)
     pipeline = TextProcessingPipeline(corpus_manager)
+    udpipe_analyzer = UDPipeAnalyzer()
 
 
 if __name__ == "__main__":
