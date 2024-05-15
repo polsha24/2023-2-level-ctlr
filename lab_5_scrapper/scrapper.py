@@ -19,31 +19,45 @@ from core_utils.config_dto import ConfigDTO
 
 
 class IncorrectSeedURLError(Exception):
-    pass
-
-
-class IncorrectNumberOfArticlesError(Exception):
-    pass
+    """
+    Seed URL does not match standard pattern
+    """
 
 
 class NumberOfArticlesOutOfRangeError(Exception):
-    pass
+    """
+    Total number of articles is out of range from 1 to 150
+    """
+
+
+class IncorrectNumberOfArticlesError(Exception):
+    """
+    Total number of articles to parse is not positive integer
+    """
 
 
 class IncorrectHeadersError(Exception):
-    pass
+    """
+    Headers are not in a form of dictionary
+    """
 
 
 class IncorrectEncodingError(Exception):
-    pass
-
-
-class IncorrectVerifyError(Exception):
-    pass
+    """
+    Encoding is not a string
+    """
 
 
 class IncorrectTimeoutError(Exception):
-    pass
+    """
+    Timeout value is not a positive integer less than 60
+    """
+
+
+class IncorrectVerifyError(Exception):
+    """
+    Verify certificate value is not True or False
+    """
 
 
 class Config:
