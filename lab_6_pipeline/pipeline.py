@@ -71,11 +71,12 @@ class CorpusManager:
         meta_f = list(self.path_to_raw_txt_data.glob("*_meta.json"))
         if len(meta_f) != len(raw_f):
             raise InconsistentDatasetError
-        sorted_raw_files = sorted(raw_f, key=lambda file: get_article_id_from_filepath(file))
-        sorted_meta_files = sorted(meta_f, key=lambda file: get_article_id_from_filepath(file))
+        sorted_raw_files = sorted(raw_f)
+        sorted_meta_files = sorted(meta_f)
 
         for ind, (raw, meta) in enumerate(zip(sorted_raw_files, sorted_meta_files)):
-            if ind + 1 != get_article_id_from_filepath(raw) or ind + 1 != get_article_id_from_filepath(meta):
+            if ind + 1 != get_article_id_from_filepath(raw) \
+                    or ind + 1 != get_article_id_from_filepath(meta):
                 raise InconsistentDatasetError
 
         if any(file.stat().st_size == 0 for file in (raw_f + meta_f)):
@@ -169,13 +170,7 @@ class UDPipeAnalyzer(LibraryWrapper):
         Returns:
             list[StanzaDocument | str]: List of documents
         """
-        documents = []
-
-        for text in texts:
-            conllu_annotation = self._analyzer(text)._.conll_str
-            documents.append(conllu_annotation)
-
-        return documents
+        return [f'{self._analyzer(text)._.conll_str}\n' for text in texts]
 
     def to_conllu(self, article: Article) -> None:
         """
@@ -288,7 +283,8 @@ class POSFrequencyPipeline:
             art.set_pos_info(self._count_frequencies(art))
             to_meta(art)
 
-            visualize(article=art, path_to_save=self._corpus.path_to_raw_txt_data / f'{art_id}_image.png')
+            visualize(article=art,
+                      path_to_save=self._corpus.path_to_raw_txt_data / f'{art_id}_image.png')
 
     def _count_frequencies(self, article: Article) -> dict[str, int]:
         """
