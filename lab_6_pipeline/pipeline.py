@@ -115,17 +115,19 @@ class TextProcessingPipeline(PipelineProtocol):
             analyzer (LibraryWrapper | None): Analyzer instance
         """
         self._corpus = corpus_manager
-        self.analyzer = analyzer
+        self._analyzer = analyzer
 
     def run(self) -> None:
         """
         Perform basic preprocessing and write processed text to files.
         """
-        for article in self._corpus.get_articles().values():
+        docs = self._analyzer.analyze([article.text for article in self._corpus.get_articles().values()])
+
+        for i, article in enumerate(self._corpus.get_articles().values()):
             to_cleaned(article)
-            if self.analyzer:
-                article.set_conllu_info(self.analyzer.analyze(split_by_sentence(article.text)))
-                self.analyzer.to_conllu(article)
+            if self._analyzer and docs:
+                article.set_conllu_info(docs[i])
+                self._analyzer.to_conllu(article)
 
 
 class UDPipeAnalyzer(LibraryWrapper):
@@ -225,7 +227,7 @@ class StanzaAnalyzer(LibraryWrapper):
         Returns:
             list[StanzaDocument]: List of documents
         """
-        analyzed = self._analyzer.process([Document([], text=' '.join(texts))])
+        analyzed = self._analyzer.process([Document([], text=text) for text in texts])
         return analyzed
 
     def to_conllu(self, article: Article) -> None:
@@ -236,7 +238,7 @@ class StanzaAnalyzer(LibraryWrapper):
             article (Article): Article containing information to save
         """
         CoNLL.write_doc2conll(
-            doc=article.get_conllu_info()[0],
+            doc=article.get_conllu_info(),
             filename=article.get_file_path(ArtifactType.STANZA_CONLLU),
         )
 
