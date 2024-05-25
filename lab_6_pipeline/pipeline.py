@@ -70,16 +70,16 @@ class CorpusManager:
         raw_f = list(self.path_to_raw_txt_data.glob("*_raw.txt"))
         meta_f = list(self.path_to_raw_txt_data.glob("*_meta.json"))
         if len(meta_f) != len(raw_f):
-            raise InconsistentDatasetError("lens are not equal")
-        raw_f.sort(key=lambda x: int(get_article_id_from_filepath(x)))
-        meta_f.sort(key=lambda x: int(get_article_id_from_filepath(x)))
+            raise InconsistentDatasetError()
+        raw_f.sort()
+        meta_f.sort()
 
         for ind, (raw, meta) in enumerate(iterable=zip(raw_f, meta_f), start=1):
             if ind != get_article_id_from_filepath(raw) \
                     or ind != get_article_id_from_filepath(meta) \
                     or not raw.stat().st_size \
                     or not meta.stat().st_size:
-                raise InconsistentDatasetError("empty files")
+                raise InconsistentDatasetError()
 
     def _scan_dataset(self) -> None:
         """
@@ -124,10 +124,10 @@ class TextProcessingPipeline(PipelineProtocol):
         docs = self._analyzer.analyze([article.text for article in
                                        self._corpus.get_articles().values()])
 
-        for i, article in enumerate(self._corpus.get_articles().values()):
+        for ind, article in enumerate(self._corpus.get_articles().values()):
             to_cleaned(article)
             if self._analyzer and docs:
-                article.set_conllu_info(docs[i])
+                article.set_conllu_info(docs[ind])
                 self._analyzer.to_conllu(article)
 
 
@@ -184,7 +184,6 @@ class UDPipeAnalyzer(LibraryWrapper):
         path = article.get_file_path(ArtifactType.UDPIPE_CONLLU)
         with open(path, 'w', encoding='utf-8') as annotation_file:
             annotation_file.writelines(article.get_conllu_info())
-            # annotation_file.write("\n")
 
 
 class StanzaAnalyzer(LibraryWrapper):
